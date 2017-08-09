@@ -1,0 +1,168 @@
+<?php
+
+class wtLibraryConstants {
+
+  const NODE_TYPES = array('heft', 'artikel');
+  const ORDER_LIBRARY_STATUS = 'checkout_complete';
+
+}
+
+function wt_library_menu () {
+  $items['library'] = array(
+    'title' => 'Bilbiothek',
+    'description' => '',
+    'page callback' => '_wt_your_library_page',
+    'page arguments' => array(),
+    'access arguments' => array('access library'),
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  $items['authors_library'] = array(
+    'title' => 'Autoren Bilbiothek',
+    'description' => '',
+    'page callback' => '_wt_authors_library_page',
+    'page arguments' => array(),
+    'access arguments' => array('access authors library'),
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  return $items;
+}
+
+function wt_library_permission () {
+  return array(
+    'access library' => array(
+      'title' => t ('Access library'),
+    ),
+    'access authors library' => array(
+      'title' => t ('Access authors library'),
+    ),
+  );
+}
+
+function _wt_authors_library_page() {
+  
+  global $user;
+  $wUser = entity_metadata_wrapper('user', $user);
+  $authorId = $wUser->field_autor_id->value();
+  
+  $query = db_select ('field_data_field_herausgeber_autor', 'author');
+  $query->fields ('author', array('entity_id'));
+  $query->condition ('author.field_herausgeber_autor_tid', $wUser->field_autor_id->tid->value(), '=');
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+  if (isset ($result)) {
+    
+    foreach ($result as $nodeKey => $nodeValue) {
+      $nodeObject = node_load ($nodeValue);
+      $nodes[] = new freeLibraryItem($nodeObject);
+    }
+    $content = theme ('wt_library_page', array(
+      'items' => $nodes,
+    ));
+  }
+  return $content;
+}
+
+//function wt_library_file_download_access($file_item, $entity_type, $entity) {
+//  kpr($file_item);
+//  kpr($entity_type);
+//}
+
+//function wt_library_file_download($uri) {
+//  drupal_alter('file_download_access', $grants, $field_item, $entity_type, $entity);
+//  kpr($grants);
+//
+//  // Get the file record based on the URI. If not in the database just return.
+//  $files = file_load_multiple(array(), array('uri' => $uri));
+//  kpr($files);
+//  if (count($files)) {
+//    foreach ($files as $item) {
+//      // Since some database servers sometimes use a case-insensitive comparison
+//      // by default, double check that the filename is an exact match.
+//      if ($item->uri === $uri) {
+//        $file = $item;
+//        break;
+//      }
+//    }
+//  }
+//
+//  if (!isset($file)) {
+//    return;
+//  }
+//  
+//  global $user;
+////  kpr($user);
+//
+//  // Put your permission check code here.
+//  $can_access_file = TRUE;
+//
+//  // When done perform the following code    
+//  if ($can_access_file == TRUE) {
+//    $headers = file_get_content_headers($file);
+////    kpr($headers);
+//    return $headers;
+//  }  
+//  return -1; // return that user does not have access
+//}
+
+function _wt_your_library_page () {
+
+  global $user;
+
+  $query = db_select ('commerce_order', 'o');
+  $query->fields ('o', array('order_id'));
+  $query->condition ('o.status', wtLibraryConstants::ORDER_LIBRARY_STATUS, '=');
+  $query->condition ('o.uid', $user->uid, '=');
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+  if (isset ($result)) {
+
+    $orders = commerce_order_load_multiple ($result);
+
+    foreach ($orders as $orderKey => $orderValue) {
+      $wOrder = entity_metadata_wrapper ('commerce_order', $orderValue);
+      foreach ($wOrder->commerce_line_items->value () as $lineItemKey => $lineItemValue) {
+        if ($lineItemValue->type == 'product') {
+          $libraryItems[] = new wtLibrary ($lineItemValue);
+        }
+      }
+    }
+
+    $content = theme ('wt_paid_library_page', array(
+      'items' => $libraryItems,
+    ));
+  }
+  return $content;
+}
+
+
+function wt_library_theme ($existing, $type, $theme, $path) {
+
+  return array(
+    'wt_library_page' => array(
+      'arguments' => array(),
+      'template' => '/template/wt-library-page'
+    ),
+    'wt_paid_library_page' => array(
+      'arguments' => array(),
+      'template' => '/template/wt-paid-library-page'
+    ),
+    'views_view_fields__downloads__page' => array(
+      'template' => 'template/views-view-fields--downloads--page',
+      'original hook' => 'views_view_fields',
+      'preprocess functions' => array(
+        'template_preprocess',
+        'template_preprocess_views_view_fields',
+        'wt_library_preprocess_views_view_fields__downloads__page',
+      ),
+      'arguments' => array('view' => NULL, 'options' => NULL, 'row' => NULL),
+    ),
+  );
+}
+
+
+function wt_library_preprocess_views_view_fields__downloads__page (&$vars) {
+  $nodeObject = node_load ($vars['row']->entity);
+  $nodes[] = new freeLibraryItem ($nodeObject);
+  $vars['items'] = reset ($nodes);
+}

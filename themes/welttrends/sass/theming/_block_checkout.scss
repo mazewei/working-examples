@@ -1,0 +1,83 @@
+#edit-account-login-mail {
+    width: 50%;
+}
+
+.form-item-commerce-p2cp-main-field-sl-deliveryaddress-und-0-country {
+    display: none;
+}
+#edit-commerce-p2cp-main-field-sl-address-und-0,
+#edit-commerce-p2cp-main-field-sl-deliveryaddress-und-0 {
+    .street-block {
+        @include display-flex();
+        @include justify-content(flex-start);
+        @include flex-wrap(wrap);
+        & > .form-group {
+            padding-right: 5px;
+        }
+    }
+    .locality-block {
+        @include display-flex();
+        @include justify-content(flex-start);
+        @include flex-wrap(wrap);
+        & > .form-group {
+            padding-right: 5px;
+        }
+    }
+}
+
+#profile2-main-form-group-personenangaben {
+    @include display-flex();
+    @include justify-content(flex-start);
+    @include flex-wrap(wrap);
+    & > .form-group {
+        padding-right: 5px;
+    }
+}  
+
+#block-commerce-checkout-progress-indication {
+    .commerce-checkout-progress {
+        list-style: none; 
+        @include display-flex();
+        @include justify-content(flex-start);
+
+
+        .visited {
+            font-family: 'FontAwesome';
+            color: $wt-blue;
+            margin-bottom: 0.5em;
+            margin-left: 0.5em;
+            padding-right: 5px; 
+            font-style: normal;
+        }
+        li {
+                        display: inline-block;
+                        overflow: hidden;
+                        text-indent: -9999px;
+        }
+        
+
+        & > .account::before {
+            content: '\f007';
+        }
+
+        & > .checkout::before {
+            content: '\f247';
+        }
+
+        & > .shipping::before {
+            content: '\f21a';
+        }
+
+        & > .review::before {
+            content: '\f06e';
+        }
+
+        & > .payment::before {
+            content: '\f0d6';
+        }
+
+        & > .complete::before {
+            content: '\f11e';
+        }
+    }
+}

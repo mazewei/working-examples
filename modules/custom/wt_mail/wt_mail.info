@@ -1,0 +1,10 @@
+name = wt mail
+description = "mailer for wt"
+package = wt modules
+core = 7.x
+version = 7.x-1.0
+package = wt modules
+files[] = includes/include.inc
+dependencies[] = commerce_billy_mail
+dependencies[] = mimemail
+dependencies[] = htmlmail

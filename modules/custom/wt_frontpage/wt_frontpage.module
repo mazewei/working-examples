@@ -1,0 +1,213 @@
+<?php
+
+class WTConstants {
+
+  const ABOUT_PAGE = 2280;
+
+}
+
+/**
+ * Implements hook_menu().
+ */
+function wt_frontpage_menu () {
+  $items = array();
+
+  $items['landingPage'] = array(
+    'title' => 'home',
+    'description' => '',
+    'page callback' => '_wt_landing_page',
+    'page arguments' => array(),
+    'access callback' => TRUE
+  );
+
+  $items['about'] = array(
+    'title' => 'Über den Verlag',
+    'description' => '',
+    'page callback' => '_wt_corporate_page',
+    'page arguments' => array(),
+    'access callback' => TRUE
+  );
+
+
+  return $items;
+}
+
+function _wt_corporate_page () {
+
+  //about page
+  $nodeAbout = node_load (WTConstants::ABOUT_PAGE);
+  $variables['about'] = $nodeAbout;
+
+  //load publications
+  $nids = db_select ('node', 'n')
+      ->fields ('n', array('nid'))
+      ->condition ('n.type', 'publikationen')
+      ->execute ()
+      ->fetchCol ();
+  $variables['publications'] = node_load_multiple ($nids);
+
+  $content = theme ('corporate', $variables);
+  return $content;
+}
+
+function wt_frontpage_preprocess_corporate (&$variables) {
+  
+  $wNodeAbout = entity_metadata_wrapper ('node', $variables['about']);
+  
+  $variables['about_wt'] = array(
+//    'title' => $wNodeAbout->title->value (),
+    'description' => $wNodeAbout->field_content->value ()['safe_value'],
+    'image' => image_style_url('square', $wNodeAbout->field_bild->value ()['uri']),
+  );
+
+  foreach ($variables['publications'] as $publicationsKey => $publicationsValue) {
+    $wPublicationNode = entity_metadata_wrapper ('node', $publicationsValue);
+    $variables['wt_publications'][] = array(
+      'title' => $wPublicationNode->title_field->value () ? $wPublicationNode->title_field->value () : FALSE,
+      'subtitle' => $wPublicationNode->field_untertitel->value (),
+      'image' => image_style_url('listen_teaser_bild', $wPublicationNode->field_coverbild->value ()['uri']),
+      'description' => $wPublicationNode->field_body->value ()['safe_value'],
+      'contact' => $wPublicationNode->field_e_mail->value (),
+      'web' => $wPublicationNode->field_homepage->value () ? $wPublicationNode->field_homepage->value () : FALSE,
+      'mediadata' => file_create_url ($wPublicationNode->field_mediadaten->value ()['uri']),
+    );
+  }
+}
+
+function _wt_landing_page () {
+
+  // Select the 10 latest nodes
+  $query = db_select ('node', 'n');
+  $query->fields ("n", array('nid'))
+      ->condition ('n.type', 'heft', '=')
+      ->condition ('n.status', TRUE, '=')
+      ->orderBy ('n.created', 'DESC')
+      ->range (0, 6);
+  $result = $query->execute ()->fetchAll ();
+  if (isset ($result)) {
+    $variables['content'] = $result;
+    $content = theme ('front', $variables);
+  }
+
+  return $content;
+}
+
+function wt_frontpage_preprocess_front (&$variables) {
+  
+//  kpr($variables);
+  
+  $pageContent = $variables['content'];
+  foreach ($pageContent as $key => $value) {
+    $node = node_load ($value->nid);
+    $wNode = entity_metadata_wrapper ('node', $node);
+
+    if ($wNode->field_ref_zeitschrift->value ()) {
+      $edition = $wNode->field_ref_zeitschrift->value ()->name;
+    }
+
+    if ($wNode->field_heft_editorial->value ()) {
+//      kpr($wNode->field_heft_editorial->value ());
+      $editorial = text_summary ($wNode->field_heft_editorial->value ()['value']);
+    }
+
+    $pageContent[$key]->title = $wNode->title->value ();
+    $pageContent[$key]->edition = $edition;
+    $pageContent[$key]->editorial = $editorial;
+    $pageContent[$key]->url = 'node/' . $wNode->nid->value ();
+  }
+
+  $variables['pageContent'] = $pageContent;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function wt_frontpage_block_info () {
+  $blocks['bestseller'] = array(
+    'info' => t ('Bestseller Block')
+  );
+  $blocks['wt_footer'] = array(
+    'info' => t ('wt footer')
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function wt_frontpage_block_view ($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'bestseller' :
+      $block['subject'] = t ('New');
+      $block['content'] = theme ('bestseller', _wt_bestseller ());
+      break;
+    case 'wt_footer' :
+      $block['subject'] = t ('wt footer');
+      $block['content'] = theme ('wt_footer', _wtFooter ());
+      break;
+  }
+  return $block;
+}
+
+function _wtFooter () {
+
+  $variables = array(
+    'name' => variable_get ('address_title', ''),
+    'additional_name' => variable_get ('additional_address_title', ''),
+    'street' => variable_get ('address_street', ''),
+    'city' => variable_get ('zip_city', ''),
+    'phone' => variable_get ('phone', ''),
+    'fax' => variable_get ('fax', ''),
+    'logo' => theme_get_setting ('logo'),
+  );
+
+
+  return $variables;
+}
+
+function _wt_bestseller () {
+
+  $query = db_select ('node', 'n');
+  $query->fields ('n', array('nid'));
+  $query->condition ('n.type', 'heft', '=');
+  $query->range (1, 12);
+  $query->orderBy ('created', 'DESC');
+  $result = $query->execute ()->fetchAllKeyed (0,0);
+
+//  kpr($result);
+  if (isset ($result)) {
+    foreach ($result as $key => $value) {
+        $node = node_load ($value);
+        $variables['teaser'][] = $node;
+    }
+  }
+
+  return $variables;
+}
+
+function wt_frontpage_theme () {
+  return array(
+    'bestseller' => array(
+      'variables' => array(),
+      'template' => 'template/bestseller',
+    ),
+    'wt_footer' => array(
+      'variables' => array(),
+      'template' => 'template/wt-footer',
+    ),
+    'front' => array(
+      'arguments' => array(),
+      'template' => '/template/landing-page',
+    ),
+    'corporate' => array(
+      'arguments' => array(),
+      'template' => '/template/corporate-page',
+    ),
+    'contact_site_form' => array(
+      'render element' => 'form',
+      'template' => 'template/contact-site-form',
+    )
+  );
+}

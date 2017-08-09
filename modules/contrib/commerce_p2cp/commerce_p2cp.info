@@ -1,0 +1,17 @@
+name = Commerce Order Profile2 Checkout Panes
+description = Provides a checkout pane for each Profile2 profile type.
+package = Commerce (contrib)
+core = 7.x
+dependencies[] = commerce
+dependencies[] = commerce_checkout
+dependencies[] = commerce_order
+dependencies[] = entityreference
+dependencies[] = inline_entity_form
+dependencies[] = profile2
+
+; Information added by drupal.org packaging script on 2013-09-30
+version = "7.x-1.0-alpha1+2-dev"
+core = "7.x"
+project = "commerce_p2cp"
+datestamp = "1380560545"
+

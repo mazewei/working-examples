@@ -1,0 +1,182 @@
+<?php
+
+class wtMailVariables {
+
+  const CONTAINS_PDF_NODE_TYPE = 'shop_mail';
+  const SUBSCRIPTION_DELIVERY_NODE_TYPE = 'abo_mail';
+  const SUBSCRIPTION_FORM_TYPE = 'abo_bestellen';
+//2 Wochen
+  const DOWNLOAD_URL_VALID_UNTIL = 1209600;
+  const PDF_DELIVERY_EMAIL = 'downloadablePdfMail';
+  const ORDER_CONFIRM_EMAIL = 'orderConfirmationMail';
+  const SUBSCRIPTION_CONFIRM_EMAIL = 'subscriptionConfirmationMail';
+  const SUBSCRIPTION_DELIVERY_EMAIL = 'subscriptionDeliveryMail';
+  const ORDER_DELIVER_PRINT_EMAIL = 'orderSendPrintVersionMail';
+  const EBOOK_PRODUCT_TYPE = 'ebook';
+  const PRINT_PRODUCT_TYPE = 'print';
+  const EBOOK_NODE_TYPE = 'heft';
+  const ARTICLE_NODE_TYPE = 'artikel';
+  const SUBSCRIPTION_E_TID = 3804;
+  const SUBSCRIPTION_TYPES_VOCAB_VID = 4;
+  const ERROR_CONTACT_MAIL = 'm.weinhold@module-7.com';
+
+}
+
+function wt_mail_commerce_checkout_complete ($order) {
+
+  global $user;
+
+  $wOrder = entity_metadata_wrapper ('commerce_order', $order);
+
+  //connect the profile with the real user id after registration process
+  if ($wOrder->commerce_p2cp_main->pid->value ()) {
+    $profile = profile2_load ($wOrder->commerce_p2cp_main->pid->value ());
+    $wProfile = entity_metadata_wrapper ('profile2', $profile);
+    if ($wProfile->value ()->uid == 0) {
+      $wProfile->value ()->uid = $user->uid;
+      $wProfile->save ();
+    }
+
+//create commerce billing profile
+    $billingProfile = commerce_customer_profile_new ('billing', $wProfile->value ()->uid);
+    $wBillingProfile = entity_metadata_wrapper ('commerce_customer_profile', $billingProfile);
+    $wBillingProfile->commerce_customer_address->country->set ($wProfile->field_sl_address->value ()['country']);
+    $wBillingProfile->commerce_customer_address->locality->set ($wProfile->field_sl_address->value ()['locality']);
+    $wBillingProfile->commerce_customer_address->postal_code->set ($wProfile->field_sl_address->value ()['postal_code']);
+    $wBillingProfile->commerce_customer_address->thoroughfare->set ($wProfile->field_sl_address->value ()['thoroughfare']);
+    $wBillingProfile->commerce_customer_address->name_line->set ($wProfile->field_sl_firstname->value () . ' ' . $wProfile->field_sl_lastname->value ());
+    $wBillingProfile->commerce_customer_address->first_name->set ($wProfile->field_sl_firstname->value ());
+    $wBillingProfile->commerce_customer_address->last_name->set ($wProfile->field_sl_lastname->value ());
+    $wBillingProfile->commerce_customer_address->administrative_area->set ($wProfile->field_sl_address->value ()['administrative_area']);
+    $wBillingProfile->field_sl_salutation->set ($wProfile->field_sl_salutation->value ());
+    $wBillingProfile->save ();
+    $wOrder->commerce_customer_billing->set ($wBillingProfile->profile_id->value ());
+
+//create commerce shipping profile
+//case 1 shipping = billing
+    if ($wProfile->field_sl_delivery_billingaddress->value () == 1) {
+      $shippingProfile = $billingProfile;
+      $wShippingProfile = entity_metadata_wrapper ('commerce_customer_profile', $shippingProfile);
+      $wShippingProfile->type->set ('shipping');
+      $wShippingProfile->save ();
+      $wOrder->commerce_customer_shipping->set ($wShippingProfile->profile_id->value ());
+    }
+//case 2 shipping != billing
+    else {
+      $shippingProfile = commerce_customer_profile_new ('shipping', $wProfile->value ()->uid);
+      $wShippingProfile = entity_metadata_wrapper ('commerce_customer_profile', $shippingProfile);
+      $wShippingProfile->commerce_customer_address->locality->set ($wProfile->field_sl_deliveryaddress->value ()['locality']);
+      $wShippingProfile->commerce_customer_address->postal_code->set ($wProfile->field_sl_deliveryaddress->value ()['postal_code']);
+      $wShippingProfile->commerce_customer_address->thoroughfare->set ($wProfile->field_sl_deliveryaddress->value ()['thoroughfare']);
+      $wShippingProfile->commerce_customer_address->name_line->set ($wProfile->field_sl_firstname->value () . ' ' . $wProfile->field_sl_lastname->value ());
+      $wShippingProfile->commerce_customer_address->first_name->set ($wProfile->field_sl_firstname->value ());
+      $wShippingProfile->commerce_customer_address->last_name->set ($wProfile->field_sl_lastname->value ());
+      $wShippingProfile->commerce_customer_address->administrative_area->set ($wProfile->field_sl_deliveryaddress->value ()['administrative_area']);
+      $wShippingProfile->field_sl_salutation->set ($wProfile->field_sl_salutation->value ());
+      $wShippingProfile->save ();
+      $wOrder->commerce_customer_shipping->set ($wShippingProfile->profile_id->value ());
+    }
+
+    $wOrder->save ();
+  }
+
+//create order confirmation mail object and append invoice
+  $mailObject[wtMailVariables::ORDER_CONFIRM_EMAIL] = new MailService (wtMailVariables::ORDER_CONFIRM_EMAIL, $order);
+
+//check if order contains pdf files and create path if yes
+  $containsPdf = MailService::orderContainsPdfFile ($order);
+  if (isset ($containsPdf)) {
+//create mail object with pdf urls 
+    $mailObject[wtMailVariables::PDF_DELIVERY_EMAIL] = new MailService (wtMailVariables::PDF_DELIVERY_EMAIL, $order, $containsPdf);
+
+//create pdf node for removing paths after a configured period
+    $node = new stdClass();
+    $node->type = wtMailVariables::CONTAINS_PDF_NODE_TYPE;
+    $node->title = $containsPdf;
+    node_save ($node);
+  }
+
+  //check if order contains print versions
+  $containsPrint = MailService::orderContainsPrint ($order);
+  if ($containsPrint) {
+    //create mail to deliver print versions
+    $mailObject[wtMailVariables::ORDER_DELIVER_PRINT_EMAIL] = new MailService (wtMailVariables::ORDER_DELIVER_PRINT_EMAIL, $order);
+  }
+
+//send mails to the customer
+  foreach ($mailObject as $mailKey => $mailValue) {
+    $myModule = 'Welttrends Webshop Mails';
+    $message = wtMailSendService::sendWtMails ($mailValue, $myModule);
+
+
+//format as html and send 
+    $system = drupal_mail_system ($myModule, $message['token']);
+    $message = $system->format ($message['message']);
+    if ($system->mail ($message)) {
+      if ($mailValue->type == wtMailVariables::ORDER_CONFIRM_EMAIL) {
+        drupal_set_message (t ('Order confirmation and invoice has been sent to %mail', array('%mail' => $mailValue->to)));
+        watchdog (
+            $myModule . '-invoice_and_confirmation', t ('Send message of type %type to %recipient. Order ID = %orderID'), array('%orderID' => $mailValue->wOrder->order_number->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_INFO
+        );
+      }
+      elseif ($mailValue->type == wtMailVariables::PDF_DELIVERY_EMAIL) {
+        drupal_set_message (t ('Email with links for downloading your E-Papers has been sent to %mail', array('%mail' => $mailValue->to)));
+        watchdog (
+            $myModule . '-pdf_delivery', t ('Send message of type %type to %recipient. Order ID = %orderID'), array('%orderID' => $mailValue->wOrder->order_number->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_INFO
+        );
+      }
+      elseif ($mailValue->type == wtMailVariables::ORDER_DELIVER_PRINT_EMAIL) {
+        watchdog (
+            $myModule . '-internal_information', t ('Send message of type %type to %recipient. Order ID = %orderID'), array('%orderID' => $mailValue->wOrder->order_number->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_INFO
+        );
+      }
+    }
+    else {
+      drupal_set_message (t ('An error occured please inform webteam@welttrends.de'));
+      watchdog (
+          $my_module, t ('Send message of type %type to %recipient failed. Subscription ID = %subID'), array('%subID' => $mailValue->wOrder->field_abo_id->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_EMERGENCY
+      );
+    }
+  }
+}
+
+//cronjob for deleting all orders with pdf older than wtMailVariables::DOWNLOAD_URL_VALID_UNTIL
+function wt_mail_cron () {
+
+  $now = time ();
+  $deleteTime = $now - wtMailVariables::DOWNLOAD_URL_VALID_UNTIL;
+
+
+  $query = db_select ('node', 'n');
+  $query->fields ('n', array());
+  $query->condition ('type', wtMailVariables::CONTAINS_PDF_NODE_TYPE, '=');
+  $query->condition ('created', $deleteTime, '<');
+  $result = $query->execute ()->fetchAll ();
+
+  if (isset ($result)) {
+    foreach ($result as $orderDeleteKey => $orderDeleteValue) {
+      $dir = 'public://' . $orderDeleteValue->title;
+//      rrmdir ($dir);
+//      node_delete ($orderDeleteValue->nid);
+    }
+  }
+}
+
+//TODO check which problem is with cronjob
+//recursivly remove a folder and all including files
+function rrmdir ($src) {
+//  $dir = opendir ($src);
+//  while (false !== ( $file = readdir ($dir))) {
+//    if (( $file != '.' ) && ( $file != '..' )) {
+//      $full = $src . '/' . $file;
+//      if (is_dir ($full)) {
+//        rrmdir ($full);
+//      }
+//      else {
+//        unlink ($full);
+//      }
+//    }
+//  }
+//  closedir ($dir);
+//  rmdir ($src);
+}

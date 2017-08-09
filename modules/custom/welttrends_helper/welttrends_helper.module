@@ -1,0 +1,1195 @@
+<?php
+
+function welttrends_helper_menu () {
+
+  $items['myProfile'] = array(
+    'title' => 'Edit profile',
+    'description' => '',
+    'page callback' => '_dgpraec_edit_profile_redirect',
+    'page arguments' => array(1),
+    'access callback' => TRUE
+  );
+
+  $items['admin/config/wt_settings'] = array(
+    'title' => 'wt admin panel',
+    'description' => t ('Einstellungen für Welttrends Module'),
+    'position' => 'left',
+    'weight' => -15,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path ('module', 'system'),
+  );
+
+  $items['admin/config/wt_settings/taxreport'] = array(
+    'title' => 'Steuerbericht erzeugen',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_taxreport_form'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+  $items['admin/config/wt_settings/general_mail_settings'] = array(
+    'title' => 'General settings for all mail types',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('welttrends_general_mail_settings_admin'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+  $items['admin/config/wt_settings/order_confirmation_mail_settings'] = array(
+    'title' => 'Customer order confirmation mail',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('welttrends_order_confirmation_mail_settings_admin'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+  $items['admin/config/wt_settings/subscription_confirmation_mail_settings'] = array(
+    'title' => 'Customer subscription confirmation mail',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('welttrends_subscription_confirmation_mail_settings_admin'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+  $items['admin/config/wt_settings/internal_order_confirmation_mail_settings'] = array(
+    'title' => 'Internal order confirmation mail',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('welttrends_internal_order_confirmation_mail_settings_admin'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+  $items['admin/config/wt_settings/pdf_delivery_mail_settings'] = array(
+    'title' => 'Deliver pdf files mail',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('welttrends_pdf_delivery_mail_settings_admin'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access administration pages'),
+  );
+
+//  $items['admin/config/wt_settings/migrate'] = array(
+//    'title' => 'migrate tax ref to entity ref field',
+//    'description' => '',
+//    'page callback' => '_migrate_tax_ref_to_ent_ref',
+//    'page arguments' => array(1),
+//    'access arguments' => array('access administration pages'),);
+
+//  $items['admin/config/wt_settings/cleanData'] = array(
+//    'title' => 'clean data',
+//    'description' => '',
+//    'page callback' => '_clean_data',
+//    'page arguments' => array(1),
+//    'access arguments' => array('access administration pages'),);
+//
+
+//  $items['welttrends_test'] = array(
+//    'title' => 'm7 test',
+//    'description' => '',
+//    'page callback' => '_wt_migrate_tax_ref_to_entity_ref',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+//
+//  $items['welttrends_update_missing_cover'] = array(
+//    'title' => 'update missing cover',
+//    'description' => '',
+//    'page callback' => '_wt_update_missing_cover',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+//
+//  $items['welttrends_update_missing_cover_article'] = array(
+//    'title' => 'update missing cover',
+//    'description' => '',
+//    'page callback' => '_wt_update_missing_cover_article',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+//
+//  $items['welttrends_migrate_free_dl_to_node'] = array(
+//    'title' => 'migrate free downloads into new field in node',
+//    'description' => '',
+//    'page callback' => '_welttrends_migrate_free_dl_to_node',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+//
+//  $items['welttrends_find_wrong_connected_nodes'] = array(
+//    'title' => 'a list of all possible wrong referenced products',
+//    'description' => '',
+//    'page callback' => '_welttrends_wrong_referenced_nodes',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+//
+//  $items['welttrends_find_wrong_files_connected'] = array(
+//    'title' => 'a list of all possible wrong referenced files to products',
+//    'description' => '',
+//    'page callback' => '_welttrends_wrong_referenced_files',
+//    'page arguments' => array(),
+//    'access callback' => TRUE
+//  );
+
+
+  return $items;
+}
+
+/*
+ * Migration area 
+ */
+
+//migrates wrong pdf files in articles
+function _welttrends_wrong_referenced_files () {
+
+  $query = db_select ('commerce_product', 'p');
+  $query->fields ('p', array());
+  $query->condition ('type', 'artikel', '=');
+  $query->condition ('status', 1, '=');
+
+  $query->leftJoin ('field_data_field_pdf', 'pdf', 'p.product_id=pdf.entity_id');
+  $query->isNotNull ('pdf.field_pdf_fid');
+
+  $query->range (0, 5000);
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+
+  if (!empty ($result)) {
+
+    foreach ($result as $pKey => $pValue) {
+      
+      $product = commerce_product_load ($pValue);
+      $WProduct = entity_metadata_wrapper ('commerce_product', $pValue);
+//      kpr($wProduct->value());
+//      kpr ($WProduct->field_pdf->value ()['filename']);
+//      if ($WProduct->type->value () == 'heft') {
+//        if ($WProduct->field_typ->value () != 'print') {
+//          if ($WProduct->field_pdf->value ()) {
+//            $path = file_exists ($WProduct->field_pdf->value ()['uri']);
+//            $newPath = str_replace ('_2', '', $WProduct->field_pdf->value ()['uri']);
+//            if (!$path) {
+////              kpr ($WProduct->sku->value () . ';' . $WProduct->title->value () . ';' . date('d.m.Y',$WProduct->created->value()) . ';' . $WProduct->type->value() . ';' . $WProduct->field_pdf->value()['filename']);
+//            }
+//          }
+//        }
+//      }
+      if ($WProduct->type->value () == 'artikel') {
+        
+        if ($WProduct->field_pdf->value ()) {
+          $path = file_exists ($WProduct->field_pdf->value ()['uri']);
+
+          if (!$path) {
+//            kpr($pValue);
+            $newPath = preg_replace ('/_[0-5]/', '', $WProduct->field_pdf->value ()['uri']);
+            $possiblyPath = file_exists ($newPath);
+            if ($possiblyPath) {
+              $existingFile = $newPath;
+              $file = file_uri_to_object($newPath);
+              $file->status = FILE_STATUS_PERMANENT;
+              file_save($file);
+              $WProduct->field_pdf->file->set($file);
+              $WProduct->save();
+              
+            }
+            else {
+              $existingFile = 'File not exists';
+            }
+//            kpr ($WProduct->sku->value () . ';'
+//                . $WProduct->title->value () . ';'
+//                . date ('d.m.Y', $WProduct->created->value ()) . ';'
+//                . $WProduct->type->value () . ';'
+//                . $WProduct->field_pdf->value ()['uri'] . ';'
+//                . $existingFile);
+          }
+        }
+      }
+    }
+  }
+
+
+  return 'test';
+}
+
+//find wrong referenced node e.g. coupled with the wrong product
+function _welttrends_wrong_referenced_nodes () {
+  $wrong_references = array(
+    3002,
+    3462,
+    3008,
+    3009,
+    2870,
+    3001,
+    3133,
+    858,
+    859,
+    843,
+    3419,
+    598,
+    614,
+    630,
+    646,
+    790,
+    806,
+    823,
+    874,
+    1578,
+    1626,
+    1642,
+    3420,
+    599,
+    615,
+    631,
+    647,
+    791,
+    807,
+    824,
+    840,
+    875,
+    1579,
+    1627,
+    1643,
+    3421,
+    600,
+    616,
+    632,
+    648,
+    792,
+    808,
+    825,
+    841,
+    860,
+    876,
+    1580,
+    1628,
+    1644,
+    3422,
+    601,
+    617,
+    633,
+    649,
+    793,
+    826,
+    861,
+    877,
+    1581,
+    1629,
+    1645,
+    3423,
+    602,
+    618,
+    634,
+    650,
+    794,
+    810,
+    827,
+    844,
+    862,
+    878,
+    1582,
+    1630,
+    1646,
+    3252,
+    3424,
+    603,
+    619,
+    635,
+    795,
+    811,
+    828,
+    845,
+    879,
+    1583,
+    1631,
+    1647,
+    3425,
+    604,
+    620,
+    636,
+    812,
+    829,
+    846,
+    864,
+    1584,
+    1632,
+    1648,
+    3426,
+    605,
+    621,
+    637,
+    813,
+    830,
+    847,
+    865,
+    881,
+    1585,
+    1633,
+    1649,
+    3427,
+    606,
+    622,
+    638,
+    798,
+    814,
+    831,
+    848,
+    866,
+    882,
+    1586,
+    1634,
+    1650,
+    3428,
+    591,
+    607,
+    623,
+    639,
+    799,
+    815,
+    832,
+    867,
+    883,
+    1587,
+    1635,
+    1651,
+    592,
+    608,
+    624,
+    640,
+    800,
+    816,
+    833,
+    850,
+    868,
+    884,
+    1572,
+    1588,
+    1636,
+    1652,
+    3484,
+    593,
+    609,
+    625,
+    641,
+    801,
+    817,
+    834,
+    851,
+    869,
+    885,
+    1573,
+    1589,
+    1637,
+    594,
+    610,
+    626,
+    642,
+    786,
+    802,
+    818,
+    852,
+    870,
+    886,
+    1574,
+    1590,
+    1638,
+    3416,
+    595,
+    611,
+    627,
+    643,
+    787,
+    803,
+    819,
+    836,
+    853,
+    871,
+    887,
+    1575,
+    1591,
+    1623,
+    1639,
+    3417,
+    596,
+    612,
+    628,
+    644,
+    788,
+    804,
+    820,
+    837,
+    856,
+    872,
+    888,
+    1576,
+    1592,
+    1624,
+    1640,
+    597,
+    613,
+    629,
+    645,
+    789,
+    805,
+    822,
+    838,
+    857,
+    873,
+    1577,
+    1593,
+    1625,
+    1641
+  );
+
+  foreach ($wrong_references as $refKey) {
+
+    $product = commerce_product_load ($refKey);
+
+    $list[$refKey] = array(
+      'product_title' => $product->title,
+      'sku' => $product->sku,
+      'pid' => $product->product_id,
+      'type' => $product->type,
+    );
+
+    $query = db_select ('node', 'n');
+    $query->fields ('n', array());
+    if ($product->type == 'artikel') {
+      $query->join ('field_data_field_artikel', 'artikel', 'artikel.entity_id=n.nid');
+      $query->condition ('artikel.field_artikel_product_id', $refKey, '=');
+    }
+    else {
+      $query->join ('field_data_field_heft', 'heft', 'heft.entity_id=n.nid');
+      $query->condition ('heft.field_heft_product_id', $refKey, '=');
+    }
+
+
+    $result = $query->execute ()->fetchAllKeyed (0, 0);
+
+    $count = count ($result);
+    $list[$refKey]['count'] = $count;
+
+    if ($count > 1) {
+
+      foreach ($result as $key => $value) {
+
+        $node = node_load ($value);
+        $wNode = entity_metadata_wrapper ('node', $node);
+        $list[$refKey]['nodes'][$wNode->nid->value ()] = array(
+          'title' => $wNode->title->value (),
+          'nid' => $wNode->nid->value (),
+        );
+      }
+    }
+
+    $content = theme ('wt_wrong_refs', array(
+      'items' => $list,
+    ));
+  }
+
+  return $content;
+}
+
+//move files from product to node if they are for free
+function _welttrends_migrate_free_dl_to_node () {
+
+  $query = db_select ('commerce_product', 'p');
+  $query->fields ('p', array());
+  $query->condition ('type', 'artikel', '=');
+  $query->join ('field_data_commerce_price', 'price', 'p.product_id=price.entity_id');
+  $query->condition ('price.commerce_price_amount', 0, '=');
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+
+  if (isset ($result)) {
+    foreach ($result as $key => $value) {
+      $product = commerce_product_load ($value);
+      $wProduct = entity_metadata_wrapper ('commerce_product', $product);
+      $nodeQuery = db_select ('node', 'n');
+      $nodeQuery->fields ('n', array());
+      $nodeQuery->join ('field_data_field_artikel', 'artikel', 'n.nid=artikel.entity_id');
+      $nodeQuery->condition ('field_artikel_product_id', $wProduct->product_id->value (), '=');
+      $nodeResult = $nodeQuery->execute ()->fetchAllKeyed (0, 0);
+
+      if (!empty ($nodeResult)) {
+        if (count ($nodeResult) == 1) {
+          $node = node_load (reset ($nodeResult));
+          $wNode = entity_metadata_wrapper ('node', $node);
+          if ($wNode->field_artikel->field_pdf->value ()['fid']) {
+            $file = file_load ($wNode->field_artikel->field_pdf->value ()['fid']);
+            $newFile = file_copy ($file, 'public://public_downloads/', FILE_EXISTS_REPLACE);
+            $wNode->field_pdf_online->file->set ($newFile);
+            $wNode->field_artikel->set ();
+            $wNode->save ();
+          }
+        }
+        elseif (count ($nodeResult) > 1) {
+          kpr ('duplicate error');
+        }
+      }
+      else {
+        kpr ('error');
+      }
+    }
+  }
+
+  return 'test';
+}
+
+//update missing cover, set a default cover (article)
+function _wt_update_missing_cover_article () {
+
+  $query = db_select ('node', 'n');
+  $query->fields ('n', array());
+  $query->condition ('n.type', 'artikel', '=');
+  $query->leftJoin ('field_data_field_coverbild', 'cover', 'n.nid=cover.entity_id');
+  $query->isNull ('cover.field_coverbild_fid');
+  $query->range(0,1);
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+
+  if (isset ($result)) {
+    foreach ($result as $key => $value) {
+      $node = node_load ($value);
+      $wNode = entity_metadata_wrapper ('node', $node);
+
+      $file = file_load (11574);
+      $wNode->field_coverbild->file->set ($file);
+      $wNode->save ();
+    }
+  }
+
+  return 'Test';
+}
+
+//update missing cover set a default for hefte (only bdi)
+function _wt_update_missing_cover () {
+
+  $query = db_select ('node', 'n');
+  $query->fields ('n', array());
+  $query->condition ('n.type', 'heft', '=');
+  $query->leftJoin ('field_data_field_coverbild', 'cover', 'n.nid=cover.entity_id');
+  $query->isNull ('cover.field_coverbild_fid');
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+
+  if (isset ($result)) {
+    foreach ($result as $key => $value) {
+      $node = node_load ($value);
+      $wNode = entity_metadata_wrapper ('node', $node);
+
+      if ($wNode->field_ref_zeitschrift->tid->value () == 1) {
+        $file = file_load (11567);
+        $wNode->field_coverbild->file->set ($file);
+        $wNode->save ();
+      }
+    }
+  }
+
+  return 'Test';
+}
+
+//migrate tax ref field in hefte to entity ref
+function _wt_migrate_tax_ref_to_entity_ref () {
+
+  $query = db_select ('node', 'n');
+  $query->fields ('n', array('nid'));
+  $query->condition ('type', 'heft', '=');
+  $query->orderBy ('nid', 'DESC');
+
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+  if (isset ($result)) {
+    foreach ($result as $key => $value) {
+      $node = node_load ($value);
+      $wNode = entity_metadata_wrapper ('node', $node);
+      if ($wNode->field_zeitschriftentitel->value ()) {
+        $tid = $wNode->field_zeitschriftentitel->value ()->tid;
+        $term = taxonomy_term_load ($tid);
+        if (!$wNode->field_ref_zeitschrift->value ()) {
+          $wNode->field_ref_zeitschrift->set ($term);
+          $wNode->save ();
+        }
+        unset ($tid);
+      }
+      else {
+        node_delete ($wNode->value ()->nid);
+      }
+    }
+  }
+
+  return 'test';
+}
+
+//delete all profiles with id 0
+function _clean_data () {
+  $query = db_select ('profile', 'p');
+  $query->fields ('p', array());
+  $query->condition ('p.uid', 0, '=');
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+  foreach ($result as $key => $value) {
+    $profile = profile2_load ($value);
+    $profile->delete ();
+  }
+  return 'test';
+}
+
+
+/*
+ * implements hook_preprocess_view_view
+ * set breadcrumb for view pages
+ */
+function welttrends_helper_preprocess_views_view (&$vars) {
+
+  if ($vars['view']->name == 'downloads') {
+
+    $breadcrumb = array();
+    $breadcrumb [] = l (t ('Home'), '');
+    drupal_set_breadcrumb ($breadcrumb);
+  }
+}
+
+/*
+ * implements hook_node_view
+ * set breadcrumb for node pages
+ */
+function welttrends_helper_node_view ($node, $view_mode) {
+
+  if ($view_mode == 'full') {
+
+    $breadcrumb = array();
+    $breadcrumb [] = l (t ('Home'), '');
+
+    if ($node->type == 'heft') {
+
+      $ebookTid = wtSearchConstants::getEbookTids ();
+      $journalTids = wtSearchConstants::getJournalTids ();
+
+      $wNode = entity_metadata_wrapper ('node', $node);
+
+      if (in_array ($wNode->field_ref_zeitschrift->tid->value (), $journalTids)) {
+        $breadcrumb [] = l (t ('Journals'), url ('journals', array('absolute' => TRUE)));
+      }
+      if (in_array ($wNode->field_ref_zeitschrift->tid->value (), $ebookTid)) {
+        $breadcrumb [] = l (t ('Ebooks'), url ('ebooks', array('absolute' => TRUE)));
+      }
+      if ($wNode->field_ref_zeitschrift->field_short_name->value ()) {
+        $breadcrumb [] = l ($wNode->field_ref_zeitschrift->field_short_name->value (), url ('journals', array('absolute' => TRUE)), array('query' => array('search' => $wNode->field_ref_zeitschrift->name->value ())));
+      }
+      else {
+        $breadcrumb [] = l ($wNode->field_ref_zeitschrift->name->value (), url ('journals', array('absolute' => TRUE)), array('query' => array('search' => $wNode->field_ref_zeitschrift->name->value ())));
+      }
+    }
+
+    if ($node->type == 'artikel') {
+      $breadcrumb [] = l (t ('E-Papers'), url ('e-papers', array('absolute' => TRUE)));
+    }
+    drupal_set_breadcrumb ($breadcrumb);
+  }
+}
+
+/*
+ * welttrends settings area
+ */
+function welttrends_subscription_confirmation_mail_settings_admin ($form, &$form_state) {
+  $form = array(
+    '#tree' => 'TRUE',
+  );
+
+  $form['subscriptionNumber'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Subscription start number, every new subscription number is + 1'),
+    '#required' => TRUE,
+    '#description' => t ('Subscription start number'),
+    '#default_value' => variable_get ('subscriptionNumber', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['subscription_confirmation_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Order confirmation subject'),
+    '#required' => TRUE,
+    '#description' => t ('Email-Subject'),
+    '#default_value' => variable_get ('subscription_confirmation_email_subject', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['subscription_confirmation_email_text'] = array(
+    '#title' => t ('Confirmation email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('subscription_confirmation_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+  $form['subscription_delivery_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Subscritption delivery subject'),
+    '#required' => TRUE,
+    '#description' => t ('Email-Subject'),
+    '#default_value' => variable_get ('subscription_delivery_email_subject', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['subscription_delivery_email_text'] = array(
+    '#title' => t ('Subscription delivery email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('subscription_delivery_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+  return system_settings_form ($form);
+}
+
+function welttrends_order_confirmation_mail_settings_admin ($form, &$form_state) {
+  $form = array(
+    '#tree' => 'TRUE',
+  );
+
+  $form['order_confirmation_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Order confirmation subject'),
+    '#required' => TRUE,
+    '#description' => t ('Email-Subject'),
+    '#default_value' => variable_get ('order_confirmation_email_subject', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['order_confirmation_email_text'] = array(
+    '#title' => t ('Confirmation email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('order_confirmation_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+  return system_settings_form ($form);
+}
+
+function welttrends_internal_order_confirmation_mail_settings_admin ($form, &$form_state) {
+  $form = array(
+    '#tree' => 'TRUE',
+  );
+
+  $form['print_delivery_notice_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Print info email subject'),
+    '#required' => TRUE,
+    '#description' => t ('Email-Subject'),
+    '#default_value' => variable_get ('print_delivery_notice_email_subject', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['print_delivery_notice_email_text'] = array(
+    '#title' => t ('Print info email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('print_delivery_notice_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+  return system_settings_form ($form);
+}
+
+function welttrends_pdf_delivery_mail_settings_admin ($form, &$form_state) {
+  $form = array(
+    '#tree' => 'TRUE',
+  );
+
+  $form['pdf_delivery_email_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Order confirmation subject'),
+    '#required' => TRUE,
+    '#description' => t ('Email-Subject'),
+    '#default_value' => variable_get ('pdf_delivery_email_subject', ''),
+    '#size' => 60,
+    '#maxlength' => 60,
+  );
+
+  $form['pdf_delivery_email_text'] = array(
+    '#title' => t ('Confirmation email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('pdf_delivery_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+
+  return system_settings_form ($form);
+}
+
+function welttrends_general_mail_settings_admin ($form, &$form_state) {
+  //build the form array
+  $form = array(
+    '#tree' => 'TRUE',
+  );
+
+  //Benachrichtigung für Druckbestellungen
+  $form['print_info_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Print Benachrichtigungen Email'),
+    '#required' => TRUE,
+    '#default_value' => variable_get ('print_info_email', ''),
+    '#description' => "Mailadresse für Bestelleingang Druckversionen.",
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#element_validate' => array('custom_taxreport_email_element_validate'),
+  );
+
+  $form['print_delivery_email_text'] = array(
+    '#title' => t ('Print info email text'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Text'),
+    '#default_value' => variable_get ('print_delivery_email_text', ''),
+    '#format' => 'full_html',
+  );
+
+  $form['bounce_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Bounce Email Adresse'),
+    '#required' => TRUE,
+    '#default_value' => variable_get ('bounce_email', ''),
+    '#description' => "Mailadresse für Rückläufermails aus PDF-Bestellungen.",
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#element_validate' => array('custom_taxreport_email_element_validate'),
+  );
+
+  $form['bcc_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('BCC Email Adresse'),
+    '#required' => TRUE,
+    '#default_value' => variable_get ('bcc_email', ''),
+    '#description' => "Mailadresse BCC.",
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#element_validate' => array('custom_taxreport_email_element_validate'),
+  );
+
+  $form['from_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t ('Absender Email Adresse Bestellbestätigung und PDF Versand'),
+    '#required' => TRUE,
+    '#default_value' => variable_get ('from_email', ''),
+    '#description' => "Mailadresse Absender für PDF-Bestellungen und Rechnungen.",
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#element_validate' => array('custom_taxreport_email_element_validate'),
+  );
+
+  $form['email_footer'] = array(
+    '#title' => t ('Footer in Bestellbestätigung und Rechnungsmail'),
+    '#type' => 'textarea',
+    '#description' => t ('Email-Footer'),
+    '#default_value' => variable_get ('email_footer', ''),
+    '#format' => 'full_html',
+  );
+
+  $form['address_title'] = array(
+    '#title' => t ('name'),
+    '#type' => 'textfield',
+    '#description' => t ('name for home page footer'),
+    '#default_value' => variable_get ('address_title', ''),
+  );
+
+  $form['additional_address_title'] = array(
+    '#title' => t ('additional title'),
+    '#type' => 'textfield',
+    '#description' => t ('street home page footer'),
+    '#default_value' => variable_get ('additional_address_title', ''),
+  );
+
+  $form['address_street'] = array(
+    '#title' => t ('street and number'),
+    '#type' => 'textfield',
+    '#description' => t ('additional data home page footer'),
+    '#default_value' => variable_get ('address_street', ''),
+  );
+
+  $form['zip_city'] = array(
+    '#title' => t ('City and zip code'),
+    '#type' => 'textfield',
+    '#description' => t ('city and zip for home page footer'),
+    '#default_value' => variable_get ('zip_city', ''),
+  );
+
+  $form['phone'] = array(
+    '#title' => t ('Phone'),
+    '#type' => 'textfield',
+    '#description' => t ('phone for home page footer'),
+    '#default_value' => variable_get ('phone', ''),
+  );
+
+  $form['fax'] = array(
+    '#title' => t ('Phone'),
+    '#type' => 'textfield',
+    '#description' => t ('fax for home page footer'),
+    '#default_value' => variable_get ('fax', ''),
+  );
+
+
+  return system_settings_form ($form);
+}
+
+function custom_register_email_element_validate ($element, &$form_state, $form) {
+  if (!valid_email_address ($element['#value'])) {
+    form_error ($element, t ('Bitte eine gültige Mailadresse angeben'));
+  }
+}
+
+function welttrends_helper_permission () {
+  return array(
+    'access welttrends settings page' => array(
+      'title' => t ('Access welttrends settings'),
+      'description' => t ('Allow user to administier custom settings'),
+    ),
+  );
+}
+
+function welttrends_helper_menu_alter (&$items) {
+  $items['user']['type'] = MENU_CALLBACK;
+  $items['user/register']['type'] = MENU_CALLBACK;
+  $items['user/password']['type'] = MENU_CALLBACK;
+}
+
+/*
+ * implements hook theme
+ */
+function welttrends_helper_theme ($existing, $type, $theme, $path) {
+
+  return array(
+    'wt_wrong_refs' => array(
+      'arguments' => array(),
+      'template' => '/template/wt-wrong-refs-page'
+    ),
+  );
+}
+
+/*
+ * various form changes all over the page
+ */
+function welttrends_helper_form_alter (&$form, &$form_state, $form_id) {
+//  kpr($form);
+
+
+  if ($form_id == 'views_exposed_form') {
+
+    if (isset ($_GET['search'])) {
+      $form['search_api_views_fulltext']['#default_value'] = $_GET['search'];
+    }
+  }
+//  
+  if ($form_id == 'abo_bestellen_entityform_edit_form') {
+    if (isset ($_GET['field_sub_product'])) {
+      $form['field_sub_product']['und']['#default_value'] = $_GET['field_sub_product'];
+    }
+
+    $form['field_titel']['und']['#options']['_none'] = t ('Title') . ' *';
+    unset ($form['field_titel']['und']['#title']);
+//    $form['field_titel']['#attributes']['class'][] = 'col-xs-12 col-sm-2';
+
+    $form['field_sl_salutation']['und']['#options']['_none'] = t ('Salutation') . ' *';
+    unset ($form['field_sl_salutation']['und']['#title']);
+//    $form['field_sl_salutation']['#attributes']['class'][] = 'col-xs-12 col-sm-2';
+
+    $form['field_sl_lastname']['und'][0]['value']['#attributes']['placeholder'] = t ('Lastname');
+//    $form['field_sl_lastname']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_sl_lastname']['und'][0]['value']['#title']);
+
+    $form['field_sl_firstname']['und'][0]['value']['#attributes']['placeholder'] = t ('First name');
+//    $form['field_sl_firstname']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_sl_firstname']['und'][0]['value']['#title']);
+
+    $form['field_subscription_email']['und'][0]['email']['#attributes']['placeholder'] = t ('Email');
+//    $form['field_subscription_email']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_subscription_email']['und'][0]['email']['#title']);
+
+    $form['field_abo_art']['und']['#options']['_none'] = t ('Select payment type') . ' *';
+//    $form['field_abo_art']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_abo_art']['und']['#title']);
+
+    $form['field_product_type']['und']['#options']['_none'] = t ('Select subscription type') . ' *';
+//    $form['field_product_type']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_product_type']['und']['#title']);
+
+    $form['field_sub_product']['und']['#options']['_none'] = t ('Select product') . ' *';
+//    $form['field_sub_product']['#attributes']['class'][] = 'col-xs-12 col-sm-4';
+    unset ($form['field_sub_product']['und']['#title']);
+
+    //organisation block
+    $form['field_sl_address']['und'][0]['organisation_block']['organisation_name']['#attributes']['placeholder'] = t ('Company');
+    unset ($form['field_sl_address']['und'][0]['organisation_block']['organisation_name']['#title']);
+
+    //street block
+    $form['field_sl_address']['und'][0]['street_block']['thoroughfare']['#attributes']['placeholder'] = t ('Street & No.');
+    unset ($form['field_sl_address']['und'][0]['street_block']['thoroughfare']['#title']);
+
+    $form['field_sl_address']['und'][0]['street_block']['premise']['#attributes']['placeholder'] = t ('Additional information');
+    unset ($form['field_sl_address']['und'][0]['street_block']['premise']['#title']);
+
+    //locality block
+    $form['field_sl_address']['und'][0]['locality_block']['postal_code']['#attributes']['placeholder'] = t ('Postal code');
+    unset ($form['field_sl_address']['und'][0]['locality_block']['postal_code']['#title']);
+
+    $form['field_sl_address']['und'][0]['locality_block']['locality']['#attributes']['placeholder'] = t ('Locality');
+    unset ($form['field_sl_address']['und'][0]['locality_block']['locality']['#title']);
+//    $form['field_sl_address']['und'][0]['locality_block']['locality']['#attributes']['class'][] = 'col-xs-12';
+  }
+
+  if ($form_id == 'user_login_block') {
+    unset ($form['links']['#markup']);
+    $form['links']['#markup'] = '<i class="reset-password"></i><a href="/~matthias/wt/user/password" class="reset-password">' . t ('password reset') . '</a>';
+  }
+
+  if ($form_id == 'contact_site_form') {
+    //name
+    $form['name']['#attributes']['placeholder'][] = $form['name']['#title'] . '*';
+    $form['name']['#attributes']['class'][] = 'form-control';
+    unset ($form['name']['#title']);
+
+    // Mail
+    $form['mail']['#attributes']['placeholder'][] = $form['mail']['#title'] . '*';
+    $form['mail']['#attributes']['class'][] = 'form-control';
+    unset ($form['mail']['#title']);
+
+
+    // Subject
+
+    $form['subject']['#attributes']['placeholder'][] = $form['subject']['#title'] . '*';
+    $form['subject']['#attributes']['class'][] = 'form-control';
+    unset ($form['subject']['#title']);
+
+    // Message
+    $form['message']['#attributes']['class'][] = 'form-control';
+    $form['message']['#attributes']['placeholder'][] = $form['message']['#title'] . '*';
+    unset ($form['message']['#title']);
+
+    // Submit
+    $form['actions']['submit']['#attributes']['class'][] = 'btn';
+    $form['actions']['submit']['#attributes']['class'][] = 'btn-success';
+    $form['actions']['submit']['#attributes']['class'][] = 'pull-right';
+  }
+
+  if ($form_id == 'commerce_checkout_form_review') {
+    $form['buttons']['continue']['#value'] = t ('Zahlungspflichtig bestellen');
+  }
+
+  if (isset ($form['product_id']) && !isset ($form['product_id']['#options'])) {
+    $product = commerce_product_load ($form['product_id']);
+    if (isset ($product->field_pdf)) {
+      $form['submit']['#value'] = t ('add PDF version to cart');
+    }
+  }
+
+  if (isset ($form['product_id']['#options'])) {
+    $products = commerce_product_load_multiple (array_keys ($form['product_id']['#options']));
+    foreach ($products as $product_key => $product_value) {
+      if ($product_value->type == 'heft') {
+        $price = commerce_currency_format ($product_value->commerce_price['und'][0]['amount'], $product_value->commerce_price['und'][0]['currency_code']);
+
+        if (strpos ($form_id, 'commerce_cart_add_to_cart_form_') === 0 && isset ($form['product_id'])) {
+          $form['product_id']['#type'] = 'radios';
+          if ($product_value->field_typ['und'][0]['value'] == 'print') {
+            $version = t ('Print: ' . $price);
+          }
+          elseif ($product_value->field_typ['und'][0]['value'] == 'ebook') {
+            $version = t ('PDF: ' . $price);
+          }
+          if (in_array ($product_key, array_keys ($form['product_id']['#options']))) {
+            $product_title = $version;
+            $form['product_id']['#options'][$product_key] = $product_title;
+          }
+        }
+      }
+    }
+  }
+  //make radios if only one version is available
+  else {
+    $product = commerce_product_load ($form['product_id']['#value']);
+    $price = commerce_currency_format ($product->commerce_price['und'][0]['amount'], $product->commerce_price['und'][0]['currency_code']);
+    $form['product_id']['#type'] = 'radios';
+    if ($product->field_typ['und'][0]['value'] == 'print') {
+      $form['product_id']['#disabled'] = TRUE;
+      $form['product_id']['#default_value'] = $product->product_id;
+      $form['product_id']['#options'] = array(
+        $product->product_id => t ('Print version: ' . $price),
+        0 => t ('PDF version: not available'),
+      );
+    }
+    elseif ($product->field_typ['und'][0]['value'] == 'ebook') {
+      $form['product_id']['#disabled'] = TRUE;
+      $form['product_id']['#default_value'] = $product->product_id;
+      $form['product_id']['#options'] = array(
+        $product->product_id => t ('PDF: ' . $price),
+        0 => t ('Print version: not available'),
+      );
+    }
+  }
+
+  if ($form_id == 'user_login') {
+    $form['name']['#description'] = t ('Bitte geben sie hier Ihren Benutzernamen ein');
+  }
+
+  if ($form_id == 'commerce_checkout_form_checkout') {
+    $form['account']['login']['mail']['#description'] = t ('Bitte geben Sie hier eine gültige E-Mail-Adresse
+                            an. Alle E-Mails werden an diese Adresse geschickt. Die Adresse wird nicht
+                            veröffentlicht und nur verwendet, wenn Sie ein neues Passwort anfordern
+                            oder bestimmte Informationen und Benachrichtigungen per E-Mail erhalten
+                            möchten.');
+
+
+    $form['commerce_p2cp_main']['field_sl_address']['und'][0]['street_block']['thoroughfare']['#title'] = t ('Street & No.');
+    $form['commerce_p2cp_main']['field_sl_address']['und'][0]['street_block']['premise']['#title'] = t ('Additional information');
+    $form['commerce_p2cp_main']['field_sl_deliveryaddress']['und'][0]['street_block']['thoroughfare']['#title'] = t ('Street & No.');
+    $form['commerce_p2cp_main']['field_sl_deliveryaddress']['und'][0]['street_block']['premise']['#title'] = t ('Additional information');
+  }
+
+  $checkout = arg (0);
+  //wir befinden uns im Checkout, Freundeskreis ist nicht gesetzt
+  if ($checkout == 'checkout') {
+
+    //change the _none-value for Anrede
+    if (isset ($form['commerce_p2cp_main'])) {
+      $lang = $form['commerce_p2cp_main']['field_sl_salutation']['#language'];
+      $form['commerce_p2cp_main']['field_sl_salutation'][$lang]['#options']['_none'] = t ('Select salutation');
+    }
+
+    //Hiding the 'no register' field when user is loged in and show message
+    global $user;
+    $uid = user_load ($user->uid);
+
+    if ($uid->uid != 0) {
+      $arg_0 = arg (0);
+      $arg_2 = arg (2);
+      unset ($form['commerce_p2cp_main']['field_no_register']);
+      if ($arg_0 == 'checkout' AND $arg_2 != 'shipping' AND $arg_2 != 'review' AND $arg_2 != 'payment' AND $arg_2 != 'complete') {
+        form_set_error ('name', t ('Bitte kontrollieren Sie Ihre Daten und fahren Sie dann fort.'));
+        return $form;
+      }
+    }
+  }
+}
+
+function _get_file_class ($mime) {
+  switch ($mime) {
+    case 'application/pdf' :
+      $icon_class = 'fa-file-text';
+      break;
+    case 'image/jpeg' :
+    case 'image/png' :
+      $icon_class = 'fa-file-image-o';
+      break;
+    case 'dgpraec/links' :
+      $icon_class = 'fa-share-square-o';
+      break;
+    default :
+      $icon_class = 'fa-file';
+      break;
+  }
+
+  return $icon_class;
+}

@@ -1,0 +1,12 @@
+/*#abo-bestellen-entityform-edit-form {
+    .subscription-requirements {
+        .panel-body {
+            @include display-flex();
+            @include flex-wrap(wrap);
+            @include justify-content(space-between);
+            .field-type-entityreference {
+                width: 30%;
+            }
+        }
+    }
+}*/

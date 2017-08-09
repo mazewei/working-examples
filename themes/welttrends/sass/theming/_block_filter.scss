@@ -1,0 +1,113 @@
+.view-filters {
+    #views-exposed-form-suche-page,
+    #views-exposed-form-downloads-page,
+    #views-exposed-form-hefte-solr-page,
+    #views-exposed-form-hefte-solr-page-1,
+    #views-exposed-form-artikel-solr-page {
+        @media screen and (max-width: $screen-xs-max) {
+            .views-exposed-widgets {
+                @include display-flex();
+                @include flex-direction(column);
+                @include justify-content(flex-start);
+                padding-left: 0px;
+                margin-left: 5px;
+                
+                #edit-search-api-views-fulltext-wrapper {
+                    width: 100%;
+                    #edit-search-api-views-fulltext,
+                    #edit-field-pdf-online-file {
+                        box-shadow: 1px 1px 1px 0px;
+                    }
+                }
+                .views-exposed-widget,
+                .views-exposed-form, 
+                .form-submit,
+                .views-submit-button {
+                    margin-top: -14px;
+                    margin-right: 0px;
+                    margin-left: 1px;
+                    padding: 6px 0 6px 0;
+                    
+                    .btn {
+                        width: 100%;
+/*                        margin-top: 2px;
+                        padding-left: 2.3em;
+                        margin-left: -18px;*/
+                        box-shadow: 1px 1px 1px 0px;
+                        
+                    }
+                    .button-labeled {
+                        font-family: 'FontAwesome';
+                        font-size: 20px;
+                        color: white;
+                        font-style: normal;
+                        font-weight: lighter;
+                        position:relative;
+                        left:12px;
+                        top: 17px;
+                    }
+
+
+                    .filter::before {
+                        content: '\f0b0';
+                        font-size: 20px;
+                    }
+                }
+            }
+        }
+        @media screen and (min-width: $screen-sm-min) {
+            .views-exposed-widgets {
+                @include display-flex();
+                @include justify-content(flex-start);
+                padding-left: 0px;
+                margin-left: 5px;
+                #edit-search-api-views-fulltext-wrapper {
+                    @media screen and (max-width: $screen-xs-min){
+                        width: 65%;
+                    }
+                    @media screen and (min-width: $screen-sm-min){
+                        width: 80%;
+                    }
+
+                    #edit-search-api-views-fulltext,
+                    #edit-field-pdf-online-file {
+                        box-shadow: 1px 1px 1px 0px;
+                    }
+                }
+                .views-exposed-widget {
+                    padding: 0em 1em 0 0;
+
+                    .btn {
+                        margin-top: 0em;
+                        padding-left: 2.3em;
+                        margin-left: -20px;
+                        box-shadow: 1px 1px 1px 0px;
+                    }
+                    .button-labeled {
+                        font-family: 'FontAwesome';
+                        font-size: 20px;
+                        color: white;
+                        margin-bottom: 0.5em;
+                        margin-left: 0.5em;
+                        /*padding-right: 5px;*/ 
+                        font-style: normal;
+                        font-weight: lighter;
+                        position:relative;
+                        left:12px;
+                        top: 4px;
+                        /*margin-right: 2px;*/
+                    }
+
+
+                    .filter::before {
+                        content: '\f0b0';
+                        font-size: 20px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+

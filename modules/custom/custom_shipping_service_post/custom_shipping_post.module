@@ -1,0 +1,183 @@
+<?php
+
+
+/**
+ * @file
+ * Handles main functionality for Commerce Austrian Post module.
+ */
+
+/**
+ * Implements hook_commerce_shipping_method_info().
+ */
+function custom_shipping_post_commerce_shipping_method_info() {
+  $shipping_methods = array();
+  $shipping_methods['post'] = array(
+    'title' => t( 'German Post' ),
+    'description' => t( 'Quote rates from German Post' ) 
+  );
+  return $shipping_methods;
+}
+
+/**
+ * Implements hook_commerce_shipping_service_info().
+ */
+function custom_shipping_post_commerce_shipping_service_info() {
+  $shipping_services = array();
+  $shipping_services['standard_post'] = array(
+    'title' => t( 'German Post' ),
+    'description' => t( 'Standard German Post service incl. 7% VAT' ),
+    'display_title' => t( 'German Post' ),
+    'shipping_method' => 'post',
+    'price_component' => 'shipping',
+    'rules_component' => TRUE,
+    'callbacks' => array(
+      'rate' => 'custom_shipping_post_service_rate_order' 
+    ) 
+  );
+  return $shipping_services;
+}
+
+/**
+ * Shipping service callback: returns a base price array for a shipping service
+ * calculated for the given order.
+ */
+function custom_shipping_post_service_rate_order($shipping_service, $order) {
+ // Get shipping profile
+  $shipping_profile = profile2_load($order->commerce_p2cp_main['und'][0]['target_id']);
+  // Get Country from user profile2 field
+  //wenn Versandadresse != Rechnungsadresse nehmen wir das Feld aus Billingaddress
+  if($shipping_profile->field_sl_delivery_billingaddress['und'][0]['value'] != 1) {
+    $country = $shipping_profile->field_sl_deliveryaddress['und'][0]['country'];
+  } 
+  //ansonsten das Feld Adresse (=Rechnungsadresse)
+  else {
+    $country = $shipping_profile->field_sl_address['und'][0]['country'];
+  }
+  
+  if($country != 'DE') {
+    $country = 'REST';
+  }
+
+  //Funktion anzahl_pakete() aus Modul custom_versandkostenrechner
+  $packages = anzahl_pakete($order,$country);
+
+  $dpd_rates = array(
+    'REST' => array('0.5' => 3.0, '1.0' => 5.5, '2.0' => 11.00),
+    'DE' => array('0.5' => 1.0, '1' => 1.65),
+  );
+  
+  //if we have a shopping cart with print versions
+  if(!empty($packages)) {
+    if(array_key_exists($country, $dpd_rates)) {
+    
+      // Rates erstellen
+      $rates = array();
+      if($country == 'DE') {  //einmalige Bearbeitungskosten setzen
+	$shipping_costs = 1.50;
+      } 
+      
+      else {
+	$shipping_costs = 1.50;
+      }
+      
+      //Euro Code setzen
+      $currency_code = 'EUR';
+      
+      //packages and prices
+      foreach( $packages as $package) {
+	foreach($dpd_rates[$country] as $max_weight => $shipping_cost ) {
+	  if($package['gewicht'] <= $package['menge'] * $max_weight ) {
+	    $shipping_costs += $package['menge'] * $shipping_cost;
+	    break;
+	  }
+	}
+      }
+      //Line item vom Type shipping rate erzeugen
+      $rates[$shipping_service['name']] = array(
+	'amount' => commerce_currency_decimal_to_amount($shipping_costs * 1.07, $currency_code),
+	'currency_code' => $currency_code,
+	'data' => array()
+      );
+    }
+    
+    // Return the rate for the requested service or FALSE if not found.
+    return array_key_exists($shipping_service['name'], $rates)
+      ? $rates[ $shipping_service['name'] ]
+      : FALSE;
+  }
+}
+
+//max weight = int 2kg| nat = 1kg, create number of packages for shipping costs
+function anzahl_pakete($order,$country) {
+  $line_item_ids = array();
+  foreach( $order->commerce_line_items['und'] as $line_item ) {
+    $line_item_ids[] = $line_item['line_item_id'];
+  }
+  $items = commerce_line_item_load_multiple($line_item_ids);
+  $gesamtgewicht_item = 0;
+  $pakete = array();
+  foreach( $items as $item ) {
+    //nur items die keine downloadprodukte sind
+    if($item->type == 'product' AND !isset($item->commerce_file_line_item_files['und'])) {
+      $gesamtgewicht_item += 0.5;
+    }
+  }
+
+  //Berechne die Gesamtzahl der Pakete aus dem Gewicht
+  if($country == 'DE') {
+    $i = ceil($gesamtgewicht_item);
+    while($i > 0){
+      //solange das Gewicht > 31.5 KG ist erstelle Pakete mit dem Höchstgewicht
+      if($gesamtgewicht_item > 1){
+	$gesamtgewicht_item -= 1;
+	$pakete[] = array('menge' => 1, 'gewicht' => 1);
+	$i--;
+      } 
+      //sobald das Gesamtgewicht < 31.5 KG ist erstelle noch ein Paket mit dem Restgewicht
+      else {
+	$pakete[] = array('menge' => 1, 'gewicht' => 0.5);
+	$i--;
+      }
+    }
+  }
+  elseif($country == 'REST') {
+    $i = ceil($gesamtgewicht_item);
+    while($i > 0){
+      //solange das Gewicht > 31.5 KG ist erstelle Pakete mit dem Höchstgewicht
+      if($gesamtgewicht_item > 2){
+	$gesamtgewicht_item -= 2;
+	$pakete[] = array('menge' => 1, 'gewicht' => 2);
+	$i = $i - 2;
+      } 
+      //sobald das Gesamtgewicht < 31.5 KG ist erstelle noch ein Paket mit dem Restgewicht
+      else {
+	$pakete[] = array('menge' => 1, 'gewicht' => 0.5);
+	$i--;
+      }
+    }
+  }
+  
+  return $pakete;
+}
+
+
+
+/**
+ * Implements hook_commerce_shipping_service_rate_options_alter().
+ */
+function custom_shipping_post_commerce_shipping_service_rate_options_alter(&$options, $order)
+{
+  // Add the DPD logo to DPD services.
+  $image = drupal_get_path( 'module', 'commerce_post_at' ) . '/images/post-at-logo.png';
+  if( file_exists($image)) {
+    foreach( $options as $key => &$option ) {
+      if( preg_match('/^post_at_/', $key)) {
+	$option = theme( 'image', array(
+	  'path' => $image,
+	  'width' => '16px' 
+	) 
+	) . ' ' . $option;
+      }
+    }
+  }
+}

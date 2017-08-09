@@ -1,0 +1,6 @@
+name = Welttrends frontpage blocks
+description = "frontpage for wt"
+package = wt modules
+core = 7.x
+dependencies[] = block
+dependencies[] = commerce_order

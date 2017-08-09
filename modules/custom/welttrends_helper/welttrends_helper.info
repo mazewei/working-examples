@@ -1,0 +1,6 @@
+name = welttrends helper module
+description = helper functions for development
+core = 7.x
+version = 7.x-1.0
+package = wt modules
+dependencies[] = commerce_p2cp

@@ -1,0 +1,5 @@
+name = library for wt
+description = "library for wtWelttrends library for registered user"
+package = wt modules
+core = 7.x
+files[] = includes/include.inc

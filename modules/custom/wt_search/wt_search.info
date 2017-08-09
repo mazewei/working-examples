@@ -1,0 +1,11 @@
+name = wt search pages
+description = "search pages for wt"
+package = wt modules
+core = 7.x
+version = 7.x-1.0
+package = wt modules
+files[] = includes/include.inc
+files[] = views_more_filters_handler_filter_author_select.inc
+files[] = views_more_filters.views.inc
+dependencies[] = search_api
+dependencies[] = search_api_solr

@@ -1,0 +1,338 @@
+#wt-library {
+
+    ul {
+        @media screen and (max-width: $screen-xs-max) {
+            padding-left: 6px;
+        }
+        @media screen and (min-width: $screen-sm-min) {
+            padding-left: 0px;
+        }
+    }
+
+
+    li {
+        list-style: none;
+        background-color: white;
+        margin-bottom: 5px;
+        @media screen and (max-width: $screen-xs-max) {
+            margin-left: -2px;
+        }
+        @media screen and (min-width: $screen-sm-min) {
+            margin-left: 20px;
+        }
+        @include display-flex();
+        @include justify-content(flex-start);
+
+        @media screen and (min-width: $screen-sm-min) {
+            .type-container {
+                background-color: $wt-blue;
+                margin-left: -15px;
+                width: 5%;
+                .library-type {
+                    text-transform: uppercase;
+                    margin-left: auto;
+                    margin-right: auto;
+                    text-align: center;
+                    -webkit-transform: rotate(270deg);
+                    -moz-transform: rotate(270deg);
+                    -o-transform: rotate(270deg);
+                    writing-mode: lr-tb;
+                    font-size: 15px;
+                    font-weight: bold;
+                    @media screen and (min-width: $screen-sm-min) {
+                        margin-top: 250px;
+                    }
+                    @media screen and (min-width: $screen-md-min) {
+                        margin-top: 165px;
+                    }
+                    @media screen and (min-width: $screen-lg-min) {
+                        margin-top: 205px;
+                    }
+                    color: white;
+
+                }
+            }
+        }
+
+        @media screen and (max-width: $screen-xs-max) {
+            @include flex-wrap(wrap);
+            .type-container {
+                background-color: $wt-blue;
+                .library-type {
+                    text-transform: uppercase;
+                    margin-left: auto;
+                    margin-right: auto;
+                    text-align: center;
+                    font-size: 15px;
+                    font-weight: bold;
+                    color: white;
+                    line-height: 30px;
+                }
+            }
+        }
+
+        .library-image {
+            margin: 10px;
+            img {
+                box-shadow: 5px 5px 18px 0px;
+
+            }
+        }
+        .library-body {
+            margin: 10px;
+            .media-heading {
+                font-size: 18px;
+                line-height: 18px;
+                height: 36px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                margin-top: 10px;
+            }
+            .metainfo {
+                font-size: 12px;
+            }
+            .subtitle {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            .keywords-journal {
+                color: $wt-blue;
+                font-weight: bold;
+            }
+            .subscribe-journal {
+                margin-top: 10px;
+                .btn-download {
+                    width: 50%;
+                    background-color: $wt-blue;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border-radius: 20px;
+                    background-image: url(../images/download.png);
+                    background-size: 22px 22px;
+                    background-position: left 5px center;
+                    background-repeat: no-repeat 
+                }
+            }
+            .isbn {
+                margin: 0 0 10px;
+            }
+            .add-to-cart-element {
+
+                .commerce-add-to-cart {
+                    .form-button-disabled {
+                        margin-top: 15px;
+                    }
+                    .form-item {
+                        margin-bottom: 1px;
+                    }
+                    .control-label {
+                        font-size: 12px;
+                        /*font-weight: bold;*/
+                    }
+                    .btn {
+                        @media screen and (max-width: $screen-xs-max) {
+                            width: 100%;
+                        }
+
+                        @media screen and (min-width: $screen-sm-min) {
+                            width: 100%;
+                        }
+
+                        @media screen and (min-width: $screen-md-min) {
+                            width: 50%;
+                        }
+
+                        @media screen and (min-width: $screen-lg-min) {
+                            width: 30%;
+                        }
+                        background-color: $wt-blue;
+                        color: white;
+                        font-size: 12px;
+                        font-weight: bold;
+                        border-radius: 20px;
+                        box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #fff;
+                    }
+
+                    input[type="submit"] {
+                        background-image: url(../images/shopping-cart.png);
+                        background-size: 22px 22px;
+                        background-position: left 5px center;
+                        background-repeat: no-repeat
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+.view-display-id-page {
+    display: flex;
+    flex-direction: column;
+    .view-content {
+        .wt-library {
+
+            .library-item {
+                list-style: none;
+                background-color: white;
+                margin-bottom: 5px;
+                @media screen and (max-width: $screen-xs-max) {
+                    margin-left: 8px;
+                }
+                @media screen and (min-width: $screen-sm-min) {
+                    margin-left: 20px;
+                }
+                padding: 0px;
+                @include display-flex();
+                @include justify-content(flex-start);
+
+                @media screen and (min-width: $screen-sm-min) {
+                    .type-container {
+                        background-color: $wt-blue;
+                        margin-left: -15px;
+                        width: 5%;
+                        .library-type {
+                            text-transform: uppercase;
+                            margin-left: auto;
+                            margin-right: auto;
+                            text-align: center;
+                            -webkit-transform: rotate(270deg);
+                            -moz-transform: rotate(270deg);
+                            -o-transform: rotate(270deg);
+                            writing-mode: lr-tb;
+                            font-size: 15px;
+                            font-weight: bold;
+                            @media screen and (min-width: $screen-sm-min) {
+                                margin-top: 250px;
+                            }
+                            @media screen and (min-width: $screen-md-min) {
+                                margin-top: 165px;
+                            }
+                            @media screen and (min-width: $screen-lg-min) {
+                                margin-top: 205px;
+                            }
+                            color: white;
+
+                        }
+                    }
+                }
+
+                @media screen and (max-width: $screen-xs-max) {
+                    @include flex-wrap(wrap);
+                    .type-container {
+                        background-color: $wt-blue;
+                        .library-type {
+                            text-transform: uppercase;
+                            margin-left: auto;
+                            margin-right: auto;
+                            text-align: center;
+                            font-size: 15px;
+                            font-weight: bold;
+                            line-height: 30px;
+                            color: white;
+
+                        }
+                    }
+                }
+
+                .library-image {
+                    margin: 10px;
+                    padding: 10px;
+                    img {
+                        box-shadow: 5px 5px 18px 0px;
+                        width: 100%;
+
+                    }
+                }
+                .library-body {
+                    margin: 10px;
+                    .media-heading {
+                        font-size: 18px;
+                        line-height: 18px;
+                        height: 36px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                        margin-top: 10px;
+                    }
+                    .metainfo {
+                        font-size: 12px;
+                    }
+                    .subtitle {
+                        font-size: 14px;
+                        font-weight: bold;
+                    }
+                    .keywords-journal {
+                        color: $wt-blue;
+                        font-weight: bold;
+                    }
+                    .isbn {
+                        margin: 0 0 10px;
+                    }
+                    .add-to-cart-element {
+                        .subscribe-journal {
+                            margin-top: 10px;
+                            .btn-download {
+                                width: 50%;
+                                background-color: $wt-blue;
+                                color: white;
+                                font-size: 12px;
+                                font-weight: bold;
+                                border-radius: 20px;
+                                background-image: url(../images/shopping-cart.png);
+                                background-size: 22px 22px;
+                                background-position: left 5px center;
+                                background-repeat: no-repeat
+                            }
+                        }
+
+
+                        .commerce-add-to-cart {
+                            .form-button-disabled {
+                                margin-top: 15px;
+                            }
+                            .form-item {
+                                margin-bottom: 1px;
+                            }
+                            .control-label {
+                                font-size: 12px;
+                                font-weight: bold;
+                            }
+                            .btn {
+                                @media screen and (max-width: $screen-xs-max) {
+                                    width: 100%;
+                                }
+
+                                @media screen and (min-width: $screen-sm-min) {
+                                    width: 100%;
+                                }
+
+                                @media screen and (min-width: $screen-md-min) {
+                                    width: 50%;
+                                }
+
+                                @media screen and (min-width: $screen-lg-min) {
+                                    width: 30%;
+                                }
+                                background-color: $wt-blue;
+                                color: white;
+                                font-size: 12px;
+                                font-weight: bold;
+                                border-radius: 20px;
+                                box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #fff;
+                            }
+
+                            input[type="submit"] {
+                                background-image: url(../images/shopping-cart.png);
+                                background-size: 22px 22px;
+                                background-position: left 5px center;
+                                background-repeat: no-repeat
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,231 @@
+.top {
+    @include display-flex();
+    .cover-image {
+
+    }
+}
+
+#node-article-detail-page  {
+
+    .metainfo-article {
+        background: white;
+        margin-top: 13px;
+        padding: 10px;
+        .journal-title-article {   
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    }
+
+    .subtitle-left {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .add-to-cart-element-small {
+        @media screen and (max-width: $screen-xs-max) {
+            background-color: white;
+            padding-bottom: 10px;
+            
+             .article-price {
+                margin-top: 10px;
+                margin-left: 10px;
+                padding-top: 10px;
+                font-size: 12px;
+            }
+            .commerce-add-to-cart {  
+                #edit-product-id,
+                .form-radios{
+/*                    margin-top: 10px;
+                    padding-top: 10px;*/
+                    .form-item {
+                        margin-bottom: 1px;
+                        margin-left:10px;
+                    }
+                    .control-label {
+                        font-size: 12px;
+                    }
+                }
+                #edit-submit {
+                    display: block;
+                    margin: auto;
+                }
+                .btn {
+                    width: 90%;
+                    background-color: $wt-blue;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border-radius: 20px;
+                    box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #fff;
+                }
+                input[type="submit"] {
+                    background-image: url(../images/shopping-cart.png);
+                    background-size: 22px 22px;
+                    background-position: left 5px center;
+                    background-repeat: no-repeat
+                }
+            }
+
+        }
+        @media screen and (min-width: $screen-sm-min) {
+            display: flex;
+            justify-content: flex-end;
+            align-items: baseline;
+            padding-bottom: 10px;
+            & > .article-price {
+                margin-top: 10px;
+
+                padding-top: 10px;
+                padding-left:20px;
+                padding-right:20px;
+                margin-left: 10px;
+                font-size: 12px;
+                vertical-align: middle;
+                background-color: white;
+                line-height: 10px;
+                p {
+                    font-weight: bold;
+                }
+            }
+            & > .field-name-field-artikel {
+                margin-left:-23px;
+                width: 30%;
+            }
+
+            .commerce-add-to-cart {  
+                #edit-product-id,
+                .form-radios{
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    .form-item {
+                        margin-bottom: 1px;
+                        margin-left:10px;
+                    }
+                    .control-label {
+                        font-size: 12px;
+                    }
+                }
+                #edit-submit {
+                    display: block;
+                    margin: auto;
+                }
+                .btn {
+                    width: 90%;
+                    background-color: $wt-blue;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border-radius: 20px;
+                    box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #fff;
+                }
+                input[type="submit"] {
+                    background-image: url(../images/shopping-cart.png);
+                    background-size: 22px 22px;
+                    background-position: left 5px center;
+                    background-repeat: no-repeat
+                }
+            }
+        }
+
+
+
+
+    }
+}
+
+#node-heft-detail-page,
+#node-article-detail-page {
+    margin-left: -9px;
+    .cover-image {
+        .wt-full-node-img {
+            box-shadow: 5px 5px 18px 0px;
+        }
+
+        .add-to-cart-element {
+            background-color: white;
+            padding-bottom: 10px;
+            .subscribe-journal {
+                margin-top: 10px;
+                .btn-subscribe {
+                    display: block;
+                    margin: auto;
+                    width: 90%;
+                    background-color: $wt-blue;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border-radius: 20px;
+                    background-image: url(../images/globus.png);
+                    background-size: 22px 22px;
+                    background-position: left 5px center;
+                    background-repeat: no-repeat
+                }
+            }
+
+            .article-price {
+                margin-top: 10px;
+                margin-left: 10px;
+                padding-top: 10px;
+                font-size: 12px;
+            }
+            .commerce-add-to-cart {  
+                #edit-product-id,
+                .form-radios{
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    .form-item {
+                        margin-bottom: 1px;
+                        margin-left:10px;
+                    }
+                    .control-label {
+                        font-size: 12px;
+                        /*font-weight: bold;*/
+                    }
+                }
+                .btn {
+                    display: block;
+                    margin: auto;
+                    width: 90%;
+                    background-color: $wt-blue;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    border-radius: 20px;
+                    /*box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #fff;*/
+                }
+                input[type="submit"] {
+                    background-image: url(../images/shopping-cart.png);
+                    background-size: 22px 22px;
+                    background-position: left 5px center;
+                    background-repeat: no-repeat
+                }
+            }
+        }
+    }
+}
+
+.subtitle {
+    font-size: 18px;
+    margin-bottom: 10px;
+    margin-top: -10px;
+}
+
+.keywords-journal {
+    margin-top: 30px;
+    a {
+        font-weight: bold;
+    }
+}
+
+.bottom-content {
+    li {
+        margin-bottom: 10px;
+        .journal-headline {
+            font-weight: bold;
+        }
+    }
+}
+

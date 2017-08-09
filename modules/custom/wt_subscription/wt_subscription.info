@@ -1,0 +1,12 @@
+name = wt subscription
+description = "subscription for wt"
+package = wt modules
+core = 7.x
+version = 7.x-1.0
+package = wt modules
+files[] = includes/include.inc
+dependencies[] = mimemail
+dependencies[] = htmlmail
+dependencies[] = entityform
+dependencies[] = addressfield
+

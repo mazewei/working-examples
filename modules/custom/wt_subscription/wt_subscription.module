@@ -1,0 +1,167 @@
+<?php
+
+function wt_subscription_node_view ($node) {
+  
+}
+
+function wt_subscription_cron () {
+  //get all subscription types
+  $typeQuery = db_select ('taxonomy_term_data', 't');
+  $typeQuery->fields ('t', array('tid', 'name'));
+  $typeQuery->condition ('vid', wtMailVariables::SUBSCRIPTION_TYPES_VOCAB_VID, '=');
+  $typeQuery->join ('field_data_field_sub_possible', 'sub', 't.tid=sub.entity_id');
+  $typeResult = $typeQuery->execute ()->fetchAllKeyed (0, 1);
+
+  if (isset ($typeResult)) {
+    foreach ($typeResult as $typeKey => $typeValue) {
+      $preparation = new wtSubscriptionPrepare ($typeKey, $typeValue);
+      if ($preparation->status == 1) {
+        $preparations[$typeKey] = $preparation;
+
+        //create a node of type subscription mail
+        $node = new stdClass();
+        $node->type = wtMailVariables::SUBSCRIPTION_DELIVERY_NODE_TYPE;
+
+        $node->title = $preparation->product['title'] . ' ' . t ('send on !date', array('!date' => 'today'));
+        node_save ($node);
+
+        $wNode = entity_metadata_wrapper ('node', $node);
+        $wNode->field_delivered_product->set ($preparation->product['nid']);
+        $wNode->save ();
+      }
+    }
+  }
+
+  //get all subscriptions with flag "elektronisch"
+  $query = db_select ('entityform', 'e');
+  $query->condition ('type', wtMailVariables::SUBSCRIPTION_FORM_TYPE, '=');
+  $query->fields ('e', array('entityform_id'));
+  $query->join ('field_data_field_product_type', 'esub', 'e.entityform_id=esub.entity_id');
+  $query->condition ('esub.field_product_type_target_id', wtMailVariables::SUBSCRIPTION_E_TID, '=');
+  $result = $query->execute ()->fetchAllKeyed (0, 0);
+  if (isset ($result)) {
+    foreach ($result as $subscriptionKey => $subscriptionValue) {
+      $eForm = entity_load ('entityform', array($subscriptionValue));
+      $wEForm = entity_metadata_wrapper ('entityform', reset ($eForm));
+
+      //check if the product is allready sended
+      if (in_array ($wEForm->field_sub_product->value ()->tid, array_keys ($preparations))) {
+        $subscriptions[] = new wtSubscriptionEmail ($wEForm, $preparations);
+      }
+    }
+  }
+
+  //send email
+  if (!empty ($subscriptions)) {
+    foreach ($subscriptions as $subForSendKey => $subForSendValue) {
+
+      //load subscription send node and add recipient
+      $subscriptionId = $subForSendValue->wEntity->entityform_id->value ();
+      $node = node_load ($subForSendValue->productSubscriptionMailNid);
+      $wNode = entity_metadata_wrapper ('node', $node);
+      
+      //add path for later delete files
+      if (!$wNode->field_subscription_path->value ()) {
+        $wNode->field_subscription_path->set ($subForSendValue->path);
+      }
+      
+      //add date for delete the real files from server
+      if (!$wNode->field_remove_files_date->value ()) {
+        $wNode->field_remove_files_date->set($wNode->created->value() + wtMailVariables::DOWNLOAD_URL_VALID_UNTIL);
+      }
+
+      $myModule = 'Welttrends Webshop Abonnement';
+      $message = wtMailSendService::sendWtMails ($subForSendValue, $myModule);
+
+      //format as html and send 
+      if (!empty ($message)) {
+        $system = drupal_mail_system ($myModule, $message['token']);
+        $message = $system->format ($message['message']);
+        if ($system->mail ($message)) {
+          $wNode->field_recipients[] = $subscriptionId;
+          watchdog (
+              $myModule . '-subscription-delivery', t ('Send message of type %type to %recipient. Subscription ID = %subID'), array('%subID' => $subForSendValue->wEntity->field_abo_id->value (), '%type' => $subForSendValue->type, '%recipient' => $subForSendValue->to), WATCHDOG_INFO
+          );
+        }
+        else {
+          $wNode->field_recipients_failure[] = $subscriptionId;
+          watchdog (
+              $myModule, t ('Send message of type %type to %recipient failed'), array('%type' => $subForSendValue->type, '%recipient' => $subForSendValue->to), WATCHDOG_EMERGENCY
+          );
+        }
+      }
+      $wNode->save ();
+    }
+  }
+}
+
+//add subscription number automatically to the subscription
+function wt_subscription_entity_presave ($entity) {
+  if (isset ($entity->type)) {
+    if ($entity->type == wtMailVariables::SUBSCRIPTION_FORM_TYPE) {
+      if ($entity->is_new == TRUE) {
+        $subscription = getSubscriptionNumber ();
+        $entity->field_abo_id['und'][0]['value'] = $subscription['number'];
+      }
+    }
+  }
+}
+
+// generate and send emails for subscription
+function wt_subscription_entityform_insert ($entityform) {
+
+  //generate emails
+  $mailObject[wtMailVariables::SUBSCRIPTION_CONFIRM_EMAIL] = new MailService (wtMailVariables::SUBSCRIPTION_CONFIRM_EMAIL, $entityform);
+
+  //send mails to the customer
+  foreach ($mailObject as $mailKey => $mailValue) {
+
+    $myModule = 'Welttrends Webshop Abonnement';
+    $message = wtMailSendService::sendWtMails ($mailValue, $myModule);
+
+//format as html and send 
+    $system = drupal_mail_system ($myModule, $message['token']);
+    $message = $system->format ($message['message']);
+    if ($system->mail ($message)) {
+      if ($message['id'] = '_subscriptionConfirmationMail') {
+        drupal_set_message (t ('The %message has send to %recipient', array('%recipient' => $mailValue->to, '%message' => 'subscriptionConfirmMail')));
+        watchdog (
+            $myModule . '-subscription-confirmation', t ('Send message of type %type to %recipient. Subscription ID = %subID'), array('%subID' => $mailValue->wOrder->field_abo_id->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_INFO
+        );
+      }
+    }
+    else {
+      drupal_set_message (t ('An error occured, please contact %contact', array('%contact' => wtMailVariables::ERROR_CONTACT_MAIL)));
+      watchdog (
+          $myModule, t ('Send message of type %type to %recipient failed. Subscription ID = %subID'), array('%subID' => $mailValue->wOrder->field_abo_id->value (), '%type' => $mailValue->type, '%recipient' => $mailValue->to), WATCHDOG_EMERGENCY
+      );
+    }
+  }
+}
+
+function getSubscriptionNumber () {
+
+  //TODO Nummer generieren
+  $number = _generateSubscriptionNumber ();
+
+  $subscriptionNumber = array(
+    'number' => $number
+  );
+
+  return $subscriptionNumber;
+}
+
+function _generateSubscriptionNumber () {
+
+  $lastNumber = variable_get ('subscriptionNumber', '');
+  if (!empty ($lastNumber)) {
+    $newNumber = $lastNumber + 1;
+    variable_set ('subscriptionNumber', $newNumber);
+  }
+  else {
+    $newNumber = 1;
+    variable_set ('subscriptionNumber', $newNumber);
+  }
+
+  return $lastNumber;
+}

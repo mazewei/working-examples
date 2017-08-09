@@ -1,0 +1,127 @@
+.add-cart-message-wrapper {
+
+    @media screen and (max-width: $screen-xs-max){
+        background-color: #fff;
+        border-radius: 20px;
+        left: 10%;
+        padding: 35px;
+        position: fixed;
+        right: 10%;
+        top: 100px;
+        z-index: 101;
+
+
+    }
+
+    .option-button-wrapper {
+        float: none;
+        margin-top: 20px;
+    }
+
+
+    box-shadow: inset 0px 1px 1px #909193, 0px 1px 0px #000;
+    border: 1px solid $wt-blue;
+    color: $wt-blue;
+    .checkout {
+        background-color: $wt-blue;
+        a {
+            color: white;
+        }
+    }
+
+    .continue {
+        background-color: #5cb85c;
+        a {
+            color: white;
+        }
+    }
+
+    .product-name {
+        font-weight: bold;
+    }
+
+}
+
+#views-form-commerce-cart-form-default {
+    .views-field-edit-quantity {
+        .form-item {
+            display: flex;
+            align-items: baseline;
+            .form-control {
+                width: 45px;
+            }
+        }
+    }
+}
+
+.ajax-shopping-cart-teaser {
+    display:flex;
+    .cart-image {
+        float: none;
+        margin-right: 0px;
+        img {
+            display: none;
+        }
+    }
+    .cart-image::before {
+        content: "\f07a";
+        font-family: 'FontAwesome';
+        font-size: 2em;
+        color: $wt-background;
+    }
+
+    .cart-product-total {
+        display:none;
+    }
+
+    .cart-product-quantity {
+
+        font-size: 10px;
+        background-color: transparent;
+        min-width: 1.8em;
+        padding: 3px 6px 1px;
+        opacity: 1;
+        text-shadow: 1px 1px 1px #000;
+        transition: opacity .1s ease-in-out;
+        @media screen and (min-width: $screen-xs-min){
+            position: absolute;
+            top: 60px;
+            right: 10px;
+
+        }
+        @media screen and (max-width: $screen-xs-min){
+            position: absolute;
+            top: 60px;
+            right: 10px;
+
+        }
+        @media screen and (min-width: $screen-md-min){
+            position: absolute;
+            top: 59px;
+            right: 20px;
+        }
+        @media screen and (min-width: $screen-lg-min){
+            position: absolute;
+            top: 59px;
+            right: 11px;
+        }
+        .quantity {
+            margin-right: auto;
+            margin-left: auto;
+            color: $wt-blue;
+
+
+        }
+    }
+}
+
+#block-dc-ajax-add-cart-ajax-shopping-cart{
+    display: none !important;
+}
+
+.icon-login::before {
+    content: "\f007";
+    font-family: 'FontAwesome';
+    font-size: 2em;
+    color: $wt-background;
+}
